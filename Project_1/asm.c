@@ -2,13 +2,18 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 void printRegisters();
 void printMemory();
 void mov(char *reg, char *constant);
-void ldr(char *reg, int memLocation);
+void ldr(char *reg, char *memLocation);
 void ldi(char *reg1, char *reg2);
-void str(char *reg, int memLocation);
+void str(char *reg, char *memLocation);
+void sti(char *reg1, char *reg2);
+void add(char *reg1, char *reg2, char *reg3);
+void b(char *constant);
+void beq(char *constant);
 char registerReturn(char *opCode);
 char *defaultVal = "0x000000000000";
 char *R0, *R1, *R2, *R3, *R4, *R5, *R6, *R7, *R8, *R9, *R10, *R11, *R12, *R13, *R14, *R15, *R16, *RPC;
@@ -42,13 +47,16 @@ int main(void) {
   fillMemory();
   fillValues();
  // gets(filename);
-  file = fopen("testcase.text","r");
+  file = fopen("test2.txt","r");
   if (file == NULL) {
     exit(EXIT_FAILURE);
   }  
   while ((read = getline(&newLine, &len, file)) != -1) { 
     printf("%s", newLine);	  
     opCode = strtok(newLine, " ");
+    for(int i = 0; opCode[i]; i++){
+      opCode[i] = tolower(opCode[i]);
+    }  
     char *reg = strtok(NULL, " ");	    
 
     if(strcmp("mov", opCode) == 0){
@@ -57,8 +65,7 @@ int main(void) {
     }
     else if (strcmp("ldr", opCode) == 0) {
       char *memLocation = strtok(NULL, " ");
-      int location = atoi(memLocation);
-      ldr(reg, location);
+      ldr(reg, memLocation);
     }
     else if (strcmp("ldi", opCode) == 0) {
       char *reg2 = strtok(NULL, " ");
@@ -66,14 +73,16 @@ int main(void) {
     }
     else if (strcmp("str", opCode) == 0) {
       char *memLocation = strtok(NULL, " ");
-      int location = atoi(memLocation);
-      str(reg, location);
+      str(reg, memLocation);
     }	    
     else if (strcmp("sti", opCode) == 0) {
-
+      char *reg2 = strtok(NULL, " ");
+      sti(reg, reg2);  
     }
     else if (strcmp("add", opCode) == 0) {
-
+      char *reg2 = strtok(NULL, " ");
+      char *reg3 = strtok(NULL, " ");
+      add(reg, reg2, reg3);
     }
     else if (strcmp("mul", opCode) == 0) {
 
@@ -82,10 +91,10 @@ int main(void) {
 
     }
     else if (strcmp("b", opCode) == 0) {
-
+      b(reg);
     }
     else if (strcmp("beq", opCode) == 0) {
-
+      beq(reg);
     }
   }
   printRegisters();
@@ -102,16 +111,39 @@ int main(void) {
 }
 
 void mov(char *reg, char *constant) {
-  for(int i = 0; i < 17; i++){
-    values[((int)reg[1])-48][i] = constant[i];
-  }	    
- // values[(int)reg[1]] = constant;
-	
+ // for(int i = 0; i < 17; i++){
+ //   values[((int)reg[1])-48][i] = constant[i];
+ // }	    
+  char temp[13];
+  int j = 0, val;
+  char temp2;
+  if(constant[0] == '-'){
+    val = 3;
+  } else { 
+    val = 2;
+  }    
+	  
+  for(int i = val; i < 12; i++){	  
+    temp[j] = constant[i];
+    j++;
+  }    
+  j = 0;
+  int length = 13 - strlen(temp); 
+  for(int i = length; i < 14; i++){
+    if(isalpha(temp[j])){
+      temp2 = toupper(temp[j]);
+      values[((int)reg[1])-48][i] = temp2;
+    } else {
+    values[((int)reg[1])-48][i] = temp[j];
+    }    
+    j++;
+  }
 }
 
-void ldr(char *reg, int memLocation) {
+void ldr(char *reg, char *memLocation) {
+  int number = (int)strtol(memLocation, NULL, 16);
   for(int i = 0; i < 15; i++){	  
-    values[((int)reg[1])-48][i] = memory[memLocation][i];
+    values[((int)reg[1])-48][i] = memory[number][i];
   }    
 }
 
@@ -123,16 +155,74 @@ void ldi(char *reg, char *reg2) {
   }
 }
 
-void str(char *reg, int memLocation) {
-  for(int i = 0; i < 15; i++){	  
-    memory[memLocation][i] = values[((int)reg[1])-48][i] ;
+void str(char *reg, char *memLocation) {
+  int number = (int)strtol(memLocation, NULL, 16);	
+  char temp[13];
+  int j = 0;
+  char temp2;
+  for(int i = 2; i < 12; i++){	  
+    temp[j] = values[((int)reg[1])-48][i];
+    j++;
   }    
+  j = 0;
+  int length = 13 - strlen(temp); 
+  for(int i = length; i < 14; i++){
+    if(isalpha(temp[j])){
+      temp2 = toupper(temp[j]);
+      memory[number][i] = temp2;
+    } else {
+    memory[number][i] = temp[j];
+    }    
+    j++;
+  }
+  memory[number][strcspn(memory[number], "\n")] = 0;
 }
 
+void sti(char *reg, char *reg2) {
+  if (reg[0] == 'R'){ 
+    memmove(reg, reg+1, strlen(reg));
+  }  
+  if (reg2[0] == 'R'){ 
+    memmove(reg2, reg2+1, strlen(reg2));
+  }
+  int reg3 = atoi(reg);
+  int reg4 = atoi(reg2);  
+  for(int i = 0; i < 15; i++) {
+    values[reg4][i] = values[reg3][i];	  
+  }
+//  values[reg4][strcspn(values[reg4], "\n")] = 0;
+}	
 
+void add(char *reg, char *reg2, char *reg3){	
+  memmove(reg, reg+1, strlen(reg));
+  memmove(reg2, reg2+1, strlen(reg2));
+  memmove(reg3, reg3+1, strlen(reg3));
+  int val1 = (int)strtol(values[atoi(reg2)], NULL, 16); 
+  int val2 = (int)strtol(values[atoi(reg3)], NULL, 16);
+  int finalVal = val1 + val2;
+  char *newVal;
+  sprintf(newVal, "%d", finalVal);
+  printf("%s", newVal);
 
+}
 
+void b(char *constant){
+  memmove(constant, constant+2, strlen(constant));
+  int constantNum = atoi(constant);
+  printf("%s", constant);
+  for(int i = 0; i < 14; i++){
+   //values[16][i] = memory[constantNum][i];
+  }     
+}	
 
+void beq(char *constant){
+  memmove(constant, constant+2, strlen(constant));
+  int j = 0;
+  for(int i = 13 - strlen(constant); i < 13; i++){	  
+    values[16][i] = constant[j];
+    j++;
+  }
+}	
 
 
 
@@ -173,6 +263,23 @@ void printMemory(){
 
 }
 
+const char* hexConvert(int quotient){
+
+    long decimalnum, remainder;
+    int i, j = 0;
+    char hexadecimalnum[100];
+ 
+    while (quotient != 0)
+    {
+        remainder = quotient % 16;
+        if (remainder < 10)
+            hexadecimalnum[j++] = 48 + remainder;
+        else
+            hexadecimalnum[j++] = 55 + remainder;
+        quotient = quotient / 16;
+    }
+    return hexadecimalnum;
+}	
 
 void printRegisters(){
   printf("register 0x0: %s\n",values[0]);
