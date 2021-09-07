@@ -15,8 +15,8 @@ void cmp(char *reg, char *reg2);
 void b(char *constant);
 void beq(char *constant);
 char *defaultVal = "0x000000000000";
-char values[17][15];
-char memory[65][15];
+char values[17][25];
+char memory[65][25];
 int pointer = 0;  
 int COMPARE_FLAG = 0;
 
@@ -41,7 +41,7 @@ int main(void) {
   char *newLine = NULL;
   size_t len = 0;
   ssize_t read;
-  char fileInstructions[64][25] = {};
+  char fileInstructions[64][25];
   FILE *fp;  
   int count = 0;
   char *opCode;
@@ -49,8 +49,11 @@ int main(void) {
   fillMemory();
   fillValues();
  // gets(filename);
-  file = fopen("testcase.text","r");
-  fp = fopen("testcase.text","r");
+  file = fopen("fib.txt","r");
+  fp = fopen("fib.txt","r");
+//  file = fopen("test2.txt","r");
+//  fp = fopen("test2.txt","r");
+
 
   if (file == NULL) {
     exit(EXIT_FAILURE);
@@ -61,7 +64,6 @@ int main(void) {
    	}
 
   }
-
     while ((read = getline(&newLine, &len, file)) != -1) { 
       printf("%s", newLine);
       for(int i = 0; i < strlen(newLine); i++){
@@ -69,8 +71,10 @@ int main(void) {
       }	      
       count++;
     }
-  for(pointer = 0;pointer < count; pointer++){
 
+  printf("%d",count);
+  for(pointer = 0;pointer < count; pointer++){
+    printf("%d", pointer);
     char splitStrings[10][10]; 
     int i, j, cnt;
     j = 0;
@@ -91,7 +95,6 @@ int main(void) {
     for(int i = 0; opCode[i]; i++){
       opCode[i] = tolower(opCode[i]);
     }    
-
     if(strcmp("mov", opCode) == 0){
       mov(splitStrings[1], splitStrings[2]);
     }
@@ -141,25 +144,14 @@ void mov(char *reg, char *constant) {
  // for(int i = 0; i < 17; i++){
  //   values[((int)reg[1])-48][i] = constant[i];
  // }	    
-  char temp[13];
-  int j = 0, val;
+  char temp[19];
+  int j = 0;
   char temp2;
   int tempNum;
-  if(constant[0] == '-'){
-    temp[0] = '-';	  
-    j = 1;
-    val = 3;
-  } else { 
-    val = 2;
-  }    
 	  
-  for(int i = val; i < 13; i++){	  
-    temp[j] = constant[i];
-    j++;
-  }   
-  tempNum = (int)strtol(temp, NULL, 16);
-  sprintf(temp, "%x", tempNum);
-
+  tempNum = (int)strtol(constant, NULL, 0);
+  sprintf(temp, "%X", tempNum);
+  //printf("%s", temp);
   j = 0;
   int length = 12 - strlen(temp); 
   for(int i = length; i < 12; i++){
@@ -213,7 +205,7 @@ void str(char *reg, char *memLocation) {
 }
 
 void sti(char *reg, char *reg2) {
-  char *temp;
+  char temp[15];
   if (reg[0] == 'R'){ 
     memmove(reg, reg+1, strlen(reg));
   }  
