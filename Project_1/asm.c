@@ -14,34 +14,33 @@ void add(char *reg1, char *reg2, char *reg3);
 void cmp(char *reg, char *reg2);
 void b(char *constant);
 void beq(char *constant);
-char *defaultVal = "0x000000000000";
+char *defaultVal = "0x00000000000000";
 char values[17][25];
-char memory[65][25];
+char memory[65][65];
 int pointer = 0;  
 int COMPARE_FLAG = 0;
 
 void fillMemory(){
-	for(int i = 0; i < 64; i++){
-	  for(int j = 0; j < 12; j++){
-	    memory[i][j] = defaultVal[j];
-	  }
-	}
+  for(int i = 0; i < 64; i++){
+    for(int j = 0; j < 12; j++){
+      memory[i][j] = defaultVal[j]; 
+    }
+  }
 }	
 
 void fillValues(){
-	for(int i = 0; i < 17; i++){
-	  for(int j = 0; j < 12; j++){
-	    values[i][j] = defaultVal[j];
-	  }
-	} 
+  for(int i = 0; i < 17; i++){
+    for(int j = 0; j < 12; j++){	
+      values[i][j] = defaultVal[j];
+    }
+  } 
 }
 
 int main(void) { 
   FILE *file;
-  char *newLine = NULL;
-  size_t len = 0;
-  ssize_t read;
-  char fileInstructions[64][25];
+  char *newLine = malloc(sizeof(char)*255);
+  size_t len = 255;
+  char fileInstructions[255][64];
   FILE *fp;  
   int count = 0;
   char *opCode;
@@ -49,49 +48,40 @@ int main(void) {
   fillMemory();
   fillValues();
  // gets(filename);
-  file = fopen("fib.txt","r");
-  fp = fopen("fib.txt","r");
-//  file = fopen("test2.txt","r");
-//  fp = fopen("test2.txt","r");
+//  file = fopen("fib.s","r");
+//  fp = fopen("fib.s","r");
+  file = fopen("test2.txt","r");
+  fp = fopen("test2.txt","r");
 
 
   if (file == NULL) {
     exit(EXIT_FAILURE);
   }  
-  for(int i=0; i<64; i++) {
-        for(int j=0; j<25; j++) {
-            fscanf(fp,"%c",&fileInstructions[i][j]);
-   	}
 
+  while (fgets(newLine, len, file) != NULL) { 
+    printf("%s", newLine);
+    strcpy(fileInstructions[count], newLine); 
+    count++;
   }
-    while ((read = getline(&newLine, &len, file)) != -1) { 
-      printf("%s", newLine);
-      for(int i = 0; i < strlen(newLine); i++){
-        fileInstructions[count][i] = newLine[i];	
-      }	      
-      count++;
-    }
-
-  printf("%d",count);
+  fclose(fp);
+  fclose(file);
   for(pointer = 0;pointer < count; pointer++){
-    printf("%d", pointer);
     char splitStrings[10][10]; 
     int i, j, cnt;
     j = 0;
     cnt = 0;
     for (i = 0; i <= (strlen(fileInstructions[pointer])); i++) {
-        if (fileInstructions[pointer][i] == ' ' || fileInstructions[pointer][i] == '\0') {
-            splitStrings[cnt][j] = '\0';
-            cnt++; 
-            j = 0; 
-        }
-        else {
-            splitStrings[cnt][j] = fileInstructions[pointer][i];
-            j++;
-        }
+      if (fileInstructions[pointer][i] == ' ' || fileInstructions[pointer][i] == '\0') {
+        splitStrings[cnt][j] = '\0';
+        cnt++; 
+        j = 0; 
+      } else {
+        splitStrings[cnt][j] = fileInstructions[pointer][i];
+        j++;
+      }
     }
     opCode = splitStrings[0];
-    printf("%s", opCode);
+//    printf("%s\n", opCode);
     for(int i = 0; opCode[i]; i++){
       opCode[i] = tolower(opCode[i]);
     }    
@@ -149,9 +139,9 @@ void mov(char *reg, char *constant) {
   char temp2;
   int tempNum;
 	  
-  tempNum = (int)strtol(constant, NULL, 0);
+  tempNum = (int)strtol(constant, NULL, 16);
   sprintf(temp, "%X", tempNum);
-  //printf("%s", temp);
+ // printf("%s", temp);
   j = 0;
   int length = 12 - strlen(temp); 
   for(int i = length; i < 12; i++){
@@ -182,16 +172,18 @@ void ldi(char *reg, char *reg2) {
 }
 
 void str(char *reg, char *memLocation) {
+  memmove(reg, reg+1, strlen(reg));
   int number = (int)strtol(memLocation, NULL, 16);	
   char temp[13];
   int j = 0;
   char temp2;
-  for(int i = 2; i < 12; i++){	  
-    temp[j] = values[((int)reg[1])-48][i];
+  for(int i = 2; i < 14; i++){	  
+    temp[j] = values[atoi(reg)][i];
     j++;
   }    
   j = 0;
   int length = 13 - strlen(temp); 
+  printf("%s", temp); 
   for(int i = length; i < 14; i++){
     if(isalpha(temp[j])){
       temp2 = toupper(temp[j]);
@@ -212,13 +204,18 @@ void sti(char *reg, char *reg2) {
   if (reg2[0] == 'R'){ 
     memmove(reg2, reg2+1, strlen(reg2));
   }
-  int tempNum = (int)strtol(values[atoi(reg2)], NULL, 16);
-  sprintf(temp, "%x", tempNum);
+  int tempNum = (int)strtol(values[atoi(reg2)], NULL, 0);
+  
+  sprintf(temp, "%X", tempNum);
 
-//  printf("%s", temp); 
   int j = 0;
+  for(int i = 0; i < 12; i++){
+    memory[tempNum][i] = defaultVal[i];
+  }
+ // printf("\n\n%d\n%s\n", tempNum, temp);
   for(int i = 12 - strlen(temp); i < 12; i++) {
-    memory[tempNum][i] = temp[j];	  
+    memory[tempNum][i] = temp[j];
+    j++;
   }
 //  values[reg4][strcspn(values[reg4], "\n")] = 0;
 }	
@@ -231,8 +228,13 @@ void add(char *reg, char *reg2, char *reg3){
   int val2 = (int)strtol(values[atoi(reg3)], NULL, 16);
   int finalVal = val1 + val2;
   char newVal[9];
-  sprintf(newVal, "%d", finalVal);
+  sprintf(newVal, "%X", finalVal);
+
+//  printf("\nval 2 %d  val 1 %d  final %d  newVal %s\n)",val1, val2, finalVal, newVal );
   int j =0;
+  for(int i = 0; i < 12; i++){
+    values[atoi(reg)][i] = defaultVal[i];
+  }	  
   for(int i = 12 - strlen(newVal); i < 12; i++){
     values[atoi(reg)][i] = newVal[j];
     j++;  
@@ -243,10 +245,11 @@ void add(char *reg, char *reg2, char *reg3){
 void cmp(char* reg, char* reg2){
   memmove(reg, reg+1, strlen(reg));
   memmove(reg2, reg2+1, strlen(reg2));
-  int val1 = (int)strtol(values[atoi(reg)], NULL, 16); 
-  int val2 = (int)strtol(values[atoi(reg2)], NULL, 16);
+ // printf("\nreg1 %s reg2 %s\n", values[atoi(reg)], values[atoi(reg2)]);
+  int val1 = (int)strtol(values[atoi(reg)], NULL, 0); 
+  int val2 = (int)strtol(values[atoi(reg2)], NULL, 0);
+//  printf("\nval1 %d val2 %d\n", val1, val2);
   int *compare = &COMPARE_FLAG;
-//  printf("%d" "%d", val1, val2);
   if(val1 == val2){
     *compare = 1; 	  
   }   	  
@@ -257,22 +260,19 @@ void b(char *constant){
   memmove(constant, constant+2, strlen(constant));
   int *constantNum = &pointer;
   *constantNum = atoi(constant)-1;
-//  printf("%d", pointer);
 }	
 
 void beq(char *constant){
   memmove(constant, constant+2, strlen(constant));
   int j = 0;
   if(COMPARE_FLAG != 0){
-	  for(int i = 13 - strlen(constant); i < 13; i++){	  
-	    values[16][i] = constant[j];
-	    j++;
-	  }
-   int *newPoint = &pointer;
-   printf("%d", atoi(constant));
-   *newPoint = atoi(constant);  
-   
-   }
+    for(int i = 13 - strlen(constant); i < 13; i++){	  
+      values[16][i] = constant[j];
+      j++;
+    }
+    int *newPoint = &pointer;
+    *newPoint = atoi(constant);  
+  }
   //printf("%d",atoi(constant));	  
 }	
 
